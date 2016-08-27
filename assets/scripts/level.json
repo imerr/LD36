@@ -20,6 +20,124 @@
       },
       "children": [
       ]
+    },
+    {
+      "type": "sprite",
+      "origin": "center",
+      "position": [140, 288],
+      "size": [200, 168],
+      "identifier": "report",
+      "active": false,
+      "sprite": {
+        "sheet" : "assets/scripts/sheet_ui.json",
+        "index": 9
+      },
+      "children": [
+        {
+          "type": "sprite",
+          "origin": "center",
+          "position": [100, 104],
+          "size": [147, 60],
+          "rotation": -13.2825,
+          "identifier": "a++",
+          "active": false,
+          "sprite": {
+            "sheet" : "assets/scripts/sheet_ui.json",
+            "index": 1
+          }
+        },
+        {
+          "type": "sprite",
+          "origin": "center",
+          "position": [100, 104],
+          "size": [99, 60],
+          "rotation": -13.2825,
+          "identifier": "a+",
+          "active": false,
+          "sprite": {
+            "sheet" : "assets/scripts/sheet_ui.json",
+            "index": 2
+          }
+        },
+        {
+          "type": "sprite",
+          "origin": "center",
+          "position": [100, 104],
+          "size": [51, 60],
+          "rotation": -13.2825,
+          "identifier": "a",
+          "active": false,
+          "sprite": {
+            "sheet" : "assets/scripts/sheet_ui.json",
+            "index": 3
+          }
+        },
+        {
+          "type": "sprite",
+          "origin": "center",
+          "position": [100, 104],
+          "size": [51, 60],
+          "rotation": -13.2825,
+          "identifier": "b",
+          "active": false,
+          "sprite": {
+            "sheet" : "assets/scripts/sheet_ui.json",
+            "index": 4
+          }
+        },
+        {
+          "type": "sprite",
+          "origin": "center",
+          "position": [100, 104],
+          "size": [51, 60],
+          "rotation": -13.2825,
+          "identifier": "c",
+          "active": false,
+          "sprite": {
+            "sheet" : "assets/scripts/sheet_ui.json",
+            "index": 5
+          }
+        },
+        {
+          "type": "sprite",
+          "origin": "center",
+          "position": [100, 104],
+          "size": [51, 60],
+          "rotation": -13.2825,
+          "identifier": "d",
+          "active": false,
+          "sprite": {
+            "sheet" : "assets/scripts/sheet_ui.json",
+            "index": 6
+          }
+        },
+        {
+          "type": "sprite",
+          "origin": "center",
+          "position": [100, 104],
+          "size": [51, 60],
+          "rotation": -13.2825,
+          "identifier": "e",
+          "active": false,
+          "sprite": {
+            "sheet" : "assets/scripts/sheet_ui.json",
+            "index": 7
+          }
+        },
+        {
+          "type": "sprite",
+          "origin": "center",
+          "position": [100, 104],
+          "size": [51, 60],
+          "rotation": -13.2825,
+          "identifier": "f",
+          "active": false,
+          "sprite": {
+            "sheet" : "assets/scripts/sheet_ui.json",
+            "index": 8
+          }
+        }
+      ]
     }
   ],
   "pyramids": [
@@ -27,17 +145,25 @@
       "texture": "assets/images/pyramid.png",
       "size": [68, 36],
       "_c": "The scale saves us doing even more calculations by hand",
-      "scale": 2,
+      "scale": 5,
       "parts": [
-        {"area": [0, 28, 68, 8], "goal": [0, 0], "attach": [[10, 0], [-10, 0]], "shapes": [[0, 4, 68, 4], [4, 0, 60, 4]]},
-        {"area": [8, 16, 26, 12], "goal": [0, 0], "attach": [[0, 0], [0, 0]], "shapes": [[0, 0, 26, 12]]},
-        {"area": [34, 16, 26, 12], "goal": [0, 0], "attach": [[0, 0], [0, 0]], "shapes": [[0, 0, 26, 12]]},
-        {"area": [20, 4, 28, 12], "goal": [0, 0], "attach": [[0, 0], [0, 0]], "shapes": [[0, 0, 28, 12]]},
-        {"area": [31, 0, 6, 4], "goal": [0, 0], "attach": [[0, 0], [0, 0]], "shapes": [[0, 0, 6, 4]]}
+        {"area": [0, 28, 68, 8], "goal": [0, 0], "attach": [[10, 0], [-10, 0]], "shapes": [[0, 2, 68, 4], [0, -2, 60, 4]]},
+        {"area": [8, 16, 26, 12], "goal": [8, -12], "attach": [[10, -4], [-10, 4]], "shapes": [[0, 4, 26, 4], [2, 0, 22, 4], [4, -4, 18, 4]]},
+        {"area": [34, 16, 26, 12], "goal": [35, -12], "attach": [[10, 4], [-10, -4]], "shapes": [[0, 4, 26, 4], [-2, 0, 22, 4], [-4, -4, 18, 4]]},
+        {"area": [20, 4, 28, 12], "goal": [21, -24], "attach": [[8, 0], [-8, 0]], "shapes": [[0, 4, 28, 4], [0, 0, 20, 4], [0, -4, 12, 4]]},
+        {"area": [31, 0, 6, 4], "goal": [32, -28], "attach": [[2, 0], [-2, 0]], "shapes": [[0, 0, 6, 4]]}
       ]
     }
   ],
   "children": [
+    {
+      "body": {
+        "type": "static",
+        "shapes": [
+          {"type": "chain", "points": [[-300, -600], [-300, 500], [1300, 500], [1300, -600], [-300, -600]]}
+        ]
+      }
+    },
     {
       "type": "sprite",
       "size": [1024, 576],
@@ -47,6 +173,11 @@
     },
     {
       "identifier": "partContainer"
+    },
+    {
+      "childData": "assets/scripts/rope.json",
+      "identifier": "rope",
+      "active": false
     },
     {
       "position": [500, 50],

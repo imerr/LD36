@@ -3,9 +3,13 @@
 #include <Engine/Game.hpp>
 
 class LD36: public engine::Game {
+protected:
+	size_t m_currentLevel;
 public:
 	LD36();
 	~LD36();
+	void Restart();
+	void Next();
 };
 
 

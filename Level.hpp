@@ -22,6 +22,10 @@ protected:
 	std::vector<std::pair<bool, engine::Node*>> m_parts;
 	size_t m_currentPart;
 	float m_destroyParticleTime;
+	bool m_levelDone;
+	bool m_levelRated;
+	float m_settleTimer;
+	engine::util::EventHandler<const sf::Event::KeyEvent&>* m_keyHandler;
 public:
 	Level(engine::Game* game);
 	~Level();
@@ -33,6 +37,9 @@ public:
 	void DestroyParticles(engine::Node* node);
 protected:
 	virtual void OnUpdate(sf::Time interval);
+
+	void Rate();
+
 };
 
 

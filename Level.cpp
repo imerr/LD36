@@ -1,12 +1,26 @@
-#include <Engine/util/json.hpp>
-#include <iostream>
-#include <Engine/ParticleSystem.hpp>
 #include "Level.hpp"
+#include "PyramidPart.hpp"
+#include "LD36.hpp"
+#include <Engine/util/json.hpp>
+#include <Engine/ParticleSystem.hpp>
+#include <iostream>
+#include <numeric>
+#include <Engine/Game.hpp>
 
-Level::Level(engine::Game* game): Scene(game), m_pyramid(0), m_currentPart(0), m_destroyParticleTime(1) {
+Level::Level(engine::Game* game): Scene(game), m_pyramid(0), m_currentPart(0), m_destroyParticleTime(1),
+								  m_levelDone(false), m_levelRated(false), m_settleTimer(0) {
+	m_keyHandler = game->OnKeyDown.MakeHandler([this](const sf::Event::KeyEvent& e){
+		if (m_levelRated) {
+			if (e.code == sf::Keyboard::R) {
+				static_cast<LD36*>(m_game)->Restart();
+			} else if (e.code == sf::Keyboard::Space) {
+				static_cast<LD36*>(m_game)->Next();
+			}
+		}
+	});
 }
 Level::~Level() {
-
+	m_game->OnKeyDown.RemoveHandler(m_keyHandler);
 }
 
 bool Level::initialize(Json::Value& root) {
@@ -22,7 +36,7 @@ bool Level::initialize(Json::Value& root) {
 		for (auto pa : p["parts"]) {
 			Pyramid::Part part;
 			part.area = engine::rectFromJson<int>(pa["area"]);
-			part.goal = engine::vector2FromJson<float>(pa["area"]);
+			part.goal = engine::vector2FromJson<float>(pa["goal"]);
 			part.attach[0] = engine::vector2FromJson<float>(pa["attach"][0u]);
 			part.attach[1] = engine::vector2FromJson<float>(pa["attach"][1u]);
 			for (auto shape : pa["shapes"]) {
@@ -37,6 +51,21 @@ bool Level::initialize(Json::Value& root) {
 
 void Level::OnUpdate(sf::Time interval) {
 	engine::Scene::OnUpdate(interval);
+	if (m_levelDone) {
+		bool settled = true;
+		m_settleTimer += interval.asSeconds();
+		for (auto part: m_parts) {
+			if (part.second->GetBody()->IsAwake()) {
+				settled = false;
+				break;
+			}
+		}
+		// 10s timeout in case parts are stuck and are constantly wiggling
+		if (settled || m_settleTimer > 10.0f) {
+			Rate();
+			m_levelDone = false;
+		}
+	}
 	if (m_destroyParticleTime < 0) {
 		engine::ParticleSystem* p = static_cast<engine::ParticleSystem*>(GetChildByID("destroyParticle"));
 		if (!p) {
@@ -47,7 +76,6 @@ void Level::OnUpdate(sf::Time interval) {
 	} else if (m_destroyParticleTime > 0.8) {
 		m_destroyParticleTime -= interval.asSeconds();
 	} else if (m_destroyParticleTime > 0) {
-		m_destroyParticleTime -= interval.asSeconds();
 		engine::ParticleSystem* p = static_cast<engine::ParticleSystem*>(GetChildByID("destroyParticle"));
 		if (!p) {
 			std::cerr << "No destroyParticle set :/" << std::endl;
@@ -56,6 +84,7 @@ void Level::OnUpdate(sf::Time interval) {
 		for (auto particle : p->GetParticles()) {
 			static_cast<engine::SpriteNode*>(particle)->SetColor(sf::Color(255, 255, 255, 255 * (m_destroyParticleTime/0.8f)));
 		}
+		m_destroyParticleTime -= interval.asSeconds();
 	}
 }
 
@@ -67,12 +96,20 @@ void Level::SetPyramid(size_t pyramid) {
 	m_pyramid = pyramid;
 	auto p = m_pyramids[pyramid];
 	auto goal = m_ui->GetChildByID("goal");
+	engine::SpriteNode* goalImageShadow = new engine::SpriteNode(m_scene);
+	goal->AddNode(goalImageShadow);
+	const float goalUISize = 120;
+	const float goalUIMargin = 20;
+	float scale = std::min((goalUISize-goalUIMargin)/p.size.x, (goalUISize-goalUIMargin)/p.size.y);
+	goalImageShadow->SetSize(sf::Vector2f(p.size.x * scale, p.size.y * scale));
+	goalImageShadow->SetTexture(p.texture);
+	goalImageShadow->setOrigin(sf::Vector2f(p.size.x * scale / 2, p.size.y * scale / 2));
+	goalImageShadow->SetPosition(goalUISize/2 + 2, goalUISize/2 + 1);
+	goalImageShadow->SetColor(sf::Color(100, 100, 100));
+
 	engine::SpriteNode* goalImage = new engine::SpriteNode(m_scene);
 	goal->AddNode(goalImage);
-	const float goalUISize = 120;
-	const float goalUIMargin = 15;
-	float scale = std::min((goalUISize-goalUIMargin)/p.size.x, (goalUISize-goalUIMargin)/p.size.y);
-	goalImage->SetSize(sf::Vector2f(p.size.x * scale, p.size.y * scale));
+	goalImage->SetSize(sf::Vector2f(p.size.x * scale - 2, p.size.y * scale - 1));
 	goalImage->SetTexture(p.texture);
 	goalImage->setOrigin(sf::Vector2f(p.size.x * scale / 2, p.size.y * scale / 2));
 	goalImage->SetPosition(goalUISize/2, goalUISize/2);
@@ -84,24 +121,24 @@ void Level::SetPyramid(size_t pyramid) {
 	m_parts.clear();
 	auto partContainer = GetChildByID("partContainer");
 	for (auto part : p.parts) {
-		engine::SpriteNode* pa = new engine::SpriteNode(this);
+		engine::SpriteNode* pa = new PyramidPart(this);
 		pa->SetSize(sf::Vector2f(part.area.width * p.scale, part.area.height * p.scale));
 		pa->SetTexture(p.texture, &part.area);
 		pa->setOrigin(sf::Vector2f(part.area.width * p.scale / 2, part.area.height * p.scale / 2));
 
 		b2BodyDef body;
 		body.userData = pa;
-		body.linearDamping = 0.2;
+		body.linearDamping = 0.4;
 		body.type = b2_dynamicBody;
 		pa->SetBody(GetWorld()->CreateBody(&body));
 
 		b2FixtureDef def;
 		b2PolygonShape poly;
-		def.density = 3;
+		def.density = 50;
 		def.friction = 0.4;
 		for (auto shape : part.shapes) {
-			poly.SetAsBox(shape.width / GetPixelMeterRatio() * scale, shape.height / GetPixelMeterRatio() * scale,
-						  b2Vec2(shape.left / GetPixelMeterRatio() * scale, shape.top / GetPixelMeterRatio() * scale),
+			poly.SetAsBox((shape.width * p.scale  / 2 - 1) / GetPixelMeterRatio(), (shape.height  * p.scale  / 2 - 1) / GetPixelMeterRatio(),
+						  b2Vec2(shape.left / GetPixelMeterRatio() * p.scale, shape.top / GetPixelMeterRatio() * p.scale),
 						  0);
 			def.shape = &poly;
 			pa->GetBody()->CreateFixture(&def);
@@ -133,6 +170,7 @@ void Level::DestroyParticles(engine::Node* node) {
 }
 
 void Level::MakePart(engine::Node* ufo) {
+	auto oldPart = m_parts[m_currentPart];
 	engine::Node* part = nullptr;
 	for (size_t cur = (m_currentPart + 1) % m_parts.size(); m_currentPart != cur; cur = (cur + 1) % m_parts.size()) {
 		auto& p = m_parts[cur];
@@ -143,9 +181,12 @@ void Level::MakePart(engine::Node* ufo) {
 		}
 	}
 	if (!part) {
-		// Yay, no more parts
-		// Probably do some judging or something
+		m_levelDone = true;
 		return;
+	} else {
+		if (oldPart.first) {
+			DestroyParticles(ufo);
+		}
 	}
 	part->SetActive(true);
 	part->GetBody()->SetLinearVelocity(b2Vec2(0,0));
@@ -172,14 +213,64 @@ void Level::MakePart(engine::Node* ufo) {
 void Level::RemovePartRope() {
 	auto& p = m_parts[m_currentPart];
 	engine::Node* part = p.second;
-	auto joint = part->GetBody()->GetJointList();
-	if (joint) {
-		if (!joint->next) {
-			auto ufo = static_cast<engine::Node*>(joint->other->GetUserData());
-			DestroyParticles(ufo);
-			MakePart(ufo);
-			p.first = true;
-		}
-		m_world->DestroyJoint(joint->joint);
+	engine::Node* ufo = nullptr;
+	for (auto joint = part->GetBody()->GetJointList(); joint;) {
+		ufo = static_cast<engine::Node*>(joint->other->GetUserData());
+		auto j = joint->joint;
+		joint = joint->next;
+		m_world->DestroyJoint(j);
 	}
+	p.first = true;
+	if (ufo) {
+		MakePart(ufo);
+	}
+}
+
+void Level::Rate() {
+	auto pyramid = m_pyramids[m_pyramid];
+	b2Vec2 center;
+	std::vector<float> scores;
+	auto pos = [this] (engine::Node* n) {
+		b2Vec2 p = n->GetBody()->GetPosition() * GetPixelMeterRatio();
+		p.x -= n->getOrigin().x;
+		p.y -= n->getOrigin().y;
+		return p;
+	};
+	for (size_t i = 0; i < pyramid.parts.size(); i++) {
+		auto p = pyramid.parts[i];
+		auto part = m_parts[i].second;
+		if (i == 0) {
+			center = pos(part);
+		}
+		auto goal = b2Vec2(p.goal.x * pyramid.scale, p.goal.y * pyramid.scale);
+		auto actual = pos(part) - center;
+		b2Vec2 score = actual - goal;
+		score.x = fabsf(score.x);
+		score.y = fabsf(score.y);
+		scores.push_back((score.x + score.y));
+	}
+	float score = std::accumulate(scores.begin(), scores.end(), 0.0f)/scores.size() * 0.9f;
+	std::cout << score << std::endl;
+	auto report = m_ui->GetChildByID("report");
+	engine::Node* grading = nullptr;
+	if (score < 1) {
+		grading = report->GetChildByID("a++");
+	} else if (score < 4) {
+		grading = report->GetChildByID("a+");
+	} else if (score < 9) {
+		grading = report->GetChildByID("a");
+	} else if (score < 15) {
+		grading = report->GetChildByID("b");
+	} else if (score < 25) {
+		grading = report->GetChildByID("c");
+	} else if (score < 35) {
+		grading = report->GetChildByID("d");
+	} else if (score < 50) {
+		grading = report->GetChildByID("e");
+	} else{
+		grading = report->GetChildByID("f");
+	}
+	report->SetActive(true);
+	grading->SetActive(true);
+	m_levelRated = true;
 }
