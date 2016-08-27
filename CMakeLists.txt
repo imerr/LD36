@@ -46,7 +46,7 @@ else ()
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpmath=sse")
     endif ()
 endif ()
-set(SOURCE_FILES main.cpp LD36.cpp Level.cpp Ufo.cpp PyramidPart.cpp)
+set(SOURCE_FILES main.cpp LD36.cpp Level.cpp Ufo.cpp)
 add_executable(LD36 ${SOURCE_FILES})
 
 target_link_libraries(LD36 Engine)

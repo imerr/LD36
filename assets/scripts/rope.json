@@ -1,0 +1,22 @@
+{
+  "type": "sprite",
+  "origin": [0, 2.5],
+  "size": [40, 8],
+  "sprite": {
+    "sheet": {
+      "texture": "assets/images/rope.png",
+      "sprites": [
+        [0, 0, 20, 4],
+        [0, 4, 20, 4],
+        [0, 8, 20, 4],
+        [0, 12, 20, 4]
+      ]
+    },
+    "animations": {
+      "default": {
+        "frames": [3, 2, 1, 0],
+        "speed": 0.06
+      }
+    }
+  }
+}

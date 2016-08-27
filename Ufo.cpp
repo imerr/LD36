@@ -1,11 +1,13 @@
 #include "Ufo.hpp"
+#include "Level.hpp"
 #include <Engine/Game.hpp>
 #include <SFML/Window/Keyboard.hpp>
+#include <Engine/Factory.hpp>
 
 Ufo::Ufo(engine::Scene* scene) : SpriteNode(scene) {
 	m_keyListener = m_scene->GetGame()->OnKeyDown.MakeHandler([this](const sf::Event::KeyEvent& e){
 		if (e.code == sf::Keyboard::Space) {
-			this->Release();
+			static_cast<Level*>(m_scene)->RemovePartRope();
 		}
 	});
 }
@@ -24,8 +26,36 @@ void Ufo::OnUpdate(sf::Time interval) {
 		v.x += 0.13;
 	}
 	m_body->SetLinearVelocity(v);
+	auto joint = m_body->GetJointList();
+	auto rope = GetChildByID("rope1");
+	if (joint) {
+		auto p = joint->joint->GetAnchorA();
+		auto pB = joint->joint->GetAnchorB();
+		float rotation = engine::util::b2AngleDeg(p, pB);
+		p = GetBody()->GetLocalPoint(p);
+		rope->SetPosition(p.x * m_scene->GetPixelMeterRatio() + getOrigin().x,
+						  p.y * m_scene->GetPixelMeterRatio() + getOrigin().y);
+		rope->SetRotation(rotation);
+		joint = joint->next;
+		rope->SetActive(true);
+	} else {
+		rope->SetActive(false);
+	}
+	rope = GetChildByID("rope2");
+	if (joint) {
+		auto p = joint->joint->GetAnchorA();
+		auto pB = joint->joint->GetAnchorB();
+		float rotation = engine::util::b2AngleDeg(p, pB);
+		p = GetBody()->GetLocalPoint(p);
+		rope->SetPosition(p.x * m_scene->GetPixelMeterRatio() + getOrigin().x,
+						  p.y * m_scene->GetPixelMeterRatio() + getOrigin().y);
+		rope->SetRotation(rotation);
+		rope->SetActive(true);
+	} else {
+		rope->SetActive(false);
+	}
 }
 
-void Ufo::Release() {
+void Ufo::PostDraw(sf::RenderTarget& target, sf::RenderStates states, float delta) {
 
 }

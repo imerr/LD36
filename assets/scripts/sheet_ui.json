@@ -1,0 +1,6 @@
+{
+  "texture": "assets/images/ui.png",
+  "sprites": [
+    [0, 0, 40, 40]
+  ]
+}

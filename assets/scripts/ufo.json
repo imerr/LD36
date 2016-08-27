@@ -2,6 +2,7 @@
   "type" : "ufo",
   "size": [92, 36],
   "origin": "center",
+  "identifier": "ufo",
   "sprite": {
     "sheet": {
       "texture": "assets/images/ufo.png",
@@ -32,9 +33,9 @@
       "spread": 30,
       "minVelocity": [30, 30, 300],
       "maxVelocity": [70, 70, 500],
-      "emitterSize": [16, 0],
-      "particleCount": 30,
-      "rate": 45,
+      "emitterSize": [20, 0],
+      "particleCount": 45,
+      "rate": 60,
       "particleConfig": {
         "type": "sprite",
         "origin": "center",
@@ -49,6 +50,14 @@
           ]
         }
       }
+    },
+    {
+      "childData": "assets/scripts/rope.json",
+      "identifier": "rope1"
+    },
+    {
+      "childData": "assets/scripts/rope.json",
+      "identifier": "rope2"
     }
   ]
 }

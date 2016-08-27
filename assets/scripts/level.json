@@ -2,13 +2,40 @@
   "type": "level",
   "size": [1024, 576],
   "pixelToMeter": 100,
-  "gravity": [0, 3],
+  "gravity": [0, 2],
   "debug": false,
   "light": {
     "enabled": false
   },
   "ui": [
-
+    {
+      "type": "sprite",
+      "position": [955, 507],
+      "size": [120, 120],
+      "origin": "center",
+      "identifier": "goal",
+      "sprite": {
+        "sheet": "assets/scripts/sheet_ui.json",
+        "index": 0
+      },
+      "children": [
+      ]
+    }
+  ],
+  "pyramids": [
+    {
+      "texture": "assets/images/pyramid.png",
+      "size": [68, 36],
+      "_c": "The scale saves us doing even more calculations by hand",
+      "scale": 2,
+      "parts": [
+        {"area": [0, 28, 68, 8], "goal": [0, 0], "attach": [[10, 0], [-10, 0]], "shapes": [[0, 4, 68, 4], [4, 0, 60, 4]]},
+        {"area": [8, 16, 26, 12], "goal": [0, 0], "attach": [[0, 0], [0, 0]], "shapes": [[0, 0, 26, 12]]},
+        {"area": [34, 16, 26, 12], "goal": [0, 0], "attach": [[0, 0], [0, 0]], "shapes": [[0, 0, 26, 12]]},
+        {"area": [20, 4, 28, 12], "goal": [0, 0], "attach": [[0, 0], [0, 0]], "shapes": [[0, 0, 28, 12]]},
+        {"area": [31, 0, 6, 4], "goal": [0, 0], "attach": [[0, 0], [0, 0]], "shapes": [[0, 0, 6, 4]]}
+      ]
+    }
   ],
   "children": [
     {
@@ -19,8 +46,39 @@
       }
     },
     {
-      "position": [500, 200],
+      "identifier": "partContainer"
+    },
+    {
+      "position": [500, 50],
       "childData": "assets/scripts/ufo.json"
+    },
+    {
+      "type": "particlesystem",
+      "position": [0, 20],
+      "identifier": "destroyParticle",
+      "angle": 0,
+      "spread": 360,
+      "active": false,
+      "minVelocity": [10, 10, 300],
+      "maxVelocity": [20, 20, 500],
+      "emitterSize": [0, 0],
+      "particleCount": 100,
+      "burst": true,
+      "load": true,
+      "particleConfig": {
+        "type": "sprite",
+        "origin": "center",
+        "size": [12, 12],
+        "sprite": {
+          "texture": "assets/images/ufoParticle.png"
+        },
+        "body": {
+          "type": "kinematic",
+          "shapes": [
+            {"type": "box", "width": 3, "height": 3, "mask": 65535}
+          ]
+        }
+      }
     }
   ]
 }
