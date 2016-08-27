@@ -1,0 +1,26 @@
+{
+  "type": "level",
+  "size": [1024, 576],
+  "pixelToMeter": 100,
+  "gravity": [0, 3],
+  "debug": false,
+  "light": {
+    "enabled": false
+  },
+  "ui": [
+
+  ],
+  "children": [
+    {
+      "type": "sprite",
+      "size": [1024, 576],
+      "sprite": {
+        "texture": "assets/images/bg.png"
+      }
+    },
+    {
+      "position": [500, 200],
+      "childData": "assets/scripts/ufo.json"
+    }
+  ]
+}

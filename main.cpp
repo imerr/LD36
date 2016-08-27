@@ -1,14 +1,10 @@
 #include "LD36.hpp"
-#include "Player.hpp"
-#include "Rune.hpp"
-#include "Goal.hpp"
-#include "Tip.hpp"
-#include "MagicLight.hpp"
-#include "OneWayPlatform.hpp"
-#include "Switch.hpp"
+#include "Ufo.hpp"
 #include <Engine/Factory.hpp>
 
 int main() {
+	engine::Factory::RegisterType("ufo", engine::Factory::CreateChildNode<Ufo>);
+
 	LD36 game;
 	game.run();
 	return 0;
