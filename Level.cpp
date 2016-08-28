@@ -6,21 +6,28 @@
 #include <iostream>
 #include <numeric>
 #include <Engine/Game.hpp>
+#include <Engine/ResourceManager.hpp>
+#include <vendor/tinydir.hpp>
+#include <Engine/Factory.hpp>
 
 Level::Level(engine::Game* game): Scene(game), m_pyramid(0), m_currentPart(0), m_destroyParticleTime(1),
 								  m_levelDone(false), m_levelRated(false), m_settleTimer(0) {
 	m_keyHandler = game->OnKeyDown.MakeHandler([this](const sf::Event::KeyEvent& e){
 		if (m_levelRated) {
 			if (e.code == sf::Keyboard::R) {
-				static_cast<LD36*>(m_game)->Restart();
-			} else if (e.code == sf::Keyboard::Space) {
-				static_cast<LD36*>(m_game)->Next();
+				static_cast<LD36*>(m_game)->Restart(m_score);
+			} else if (e.code == sf::Keyboard::Q) {
+				static_cast<LD36*>(m_game)->Next(m_score);
 			}
 		}
 	});
+	m_soundSummon = engine::ResourceManager::instance()->MakeSound("assets/sound/alien_summon.ogg");
+	m_soundSummon->setVolume(30);
+	m_scoringSound = engine::ResourceManager::instance()->MakeSound("assets/sound/score.ogg");
 }
 Level::~Level() {
 	m_game->OnKeyDown.RemoveHandler(m_keyHandler);
+	delete m_soundSummon;
 }
 
 bool Level::initialize(Json::Value& root) {
@@ -28,9 +35,33 @@ bool Level::initialize(Json::Value& root) {
 		return false;
 	}
 	auto pyramids = root["pyramids"];
+	tinydir_dir dir;
+	std::vector<std::string> levels;
+	if (tinydir_open(&dir, "levels") == 0) {
+		while (dir.has_next)
+		{
+			tinydir_file file;
+			tinydir_readfile(&dir, &file);
+			std::string name = file.name;
+			if (file.is_reg && name.length() > 5 && name.compare(name.length() - 5, 5, ".json") == 0)
+			{
+				levels.push_back("levels/"+name);
+			}
+			tinydir_next(&dir);
+		}
+	}
+	tinydir_close(&dir);
+	std::sort(levels.begin(), levels.end());
+	for (auto level : levels) {
+		Json::Value l;
+		if (engine::Factory::LoadJson(level, l)) {
+			pyramids.append(l);
+		}
+	}
 	for (auto p : pyramids) {
 		Pyramid pyramid;
 		pyramid.texture = p.get("texture", "").asString();
+		pyramid.previewArea = engine::rectFromJson<int>(p["preview"]);
 		pyramid.size = engine::vector2FromJson<float>(p["size"]);
 		pyramid.scale = p.get("scale", 1.0f).asFloat();
 		for (auto pa : p["parts"]) {
@@ -88,10 +119,9 @@ void Level::OnUpdate(sf::Time interval) {
 	}
 }
 
-void Level::SetPyramid(size_t pyramid) {
+bool Level::SetPyramid(size_t pyramid) {
 	if (pyramid >= m_pyramids.size()) {
-		std::cerr << pyramid << "is not a valid pyramid type (max " << (m_pyramids.size() - 1) << ")" << std::endl;
-		return;
+		return false;
 	}
 	m_pyramid = pyramid;
 	auto p = m_pyramids[pyramid];
@@ -102,7 +132,7 @@ void Level::SetPyramid(size_t pyramid) {
 	const float goalUIMargin = 20;
 	float scale = std::min((goalUISize-goalUIMargin)/p.size.x, (goalUISize-goalUIMargin)/p.size.y);
 	goalImageShadow->SetSize(sf::Vector2f(p.size.x * scale, p.size.y * scale));
-	goalImageShadow->SetTexture(p.texture);
+	goalImageShadow->SetTexture(p.texture, p.previewArea.width && p.previewArea.height ? &p.previewArea : nullptr);
 	goalImageShadow->setOrigin(sf::Vector2f(p.size.x * scale / 2, p.size.y * scale / 2));
 	goalImageShadow->SetPosition(goalUISize/2 + 2, goalUISize/2 + 1);
 	goalImageShadow->SetColor(sf::Color(100, 100, 100));
@@ -110,7 +140,7 @@ void Level::SetPyramid(size_t pyramid) {
 	engine::SpriteNode* goalImage = new engine::SpriteNode(m_scene);
 	goal->AddNode(goalImage);
 	goalImage->SetSize(sf::Vector2f(p.size.x * scale - 2, p.size.y * scale - 1));
-	goalImage->SetTexture(p.texture);
+	goalImage->SetTexture(p.texture, p.previewArea.width && p.previewArea.height ? &p.previewArea : nullptr);
 	goalImage->setOrigin(sf::Vector2f(p.size.x * scale / 2, p.size.y * scale / 2));
 	goalImage->SetPosition(goalUISize/2, goalUISize/2);
 
@@ -135,6 +165,7 @@ void Level::SetPyramid(size_t pyramid) {
 		b2FixtureDef def;
 		b2PolygonShape poly;
 		def.density = 50;
+		def.restitution = 0;
 		def.friction = 0.4;
 		for (auto shape : part.shapes) {
 			poly.SetAsBox((shape.width * p.scale  / 2 - 1) / GetPixelMeterRatio(), (shape.height  * p.scale  / 2 - 1) / GetPixelMeterRatio(),
@@ -150,6 +181,7 @@ void Level::SetPyramid(size_t pyramid) {
 	}
 	// Make it roll over to the first part on the first MakePart call
 	m_currentPart = m_parts.size() - 1;
+	return true;
 }
 
 void Level::DestroyParticles(engine::Node* node) {
@@ -188,6 +220,7 @@ void Level::MakePart(engine::Node* ufo) {
 			DestroyParticles(ufo);
 		}
 	}
+	m_soundSummon->play();
 	part->SetActive(true);
 	part->GetBody()->SetLinearVelocity(b2Vec2(0,0));
 	part->SetPosition(ufo->GetPosition());
@@ -249,28 +282,34 @@ void Level::Rate() {
 		score.y = fabsf(score.y);
 		scores.push_back((score.x + score.y));
 	}
-	float score = std::accumulate(scores.begin(), scores.end(), 0.0f)/scores.size() * 0.9f;
+	float score = std::accumulate(scores.begin(), scores.end(), 0.0f)/scores.size() * 0.8f;
 	std::cout << score << std::endl;
 	auto report = m_ui->GetChildByID("report");
 	engine::Node* grading = nullptr;
-	if (score < 1) {
-		grading = report->GetChildByID("a++");
-	} else if (score < 4) {
-		grading = report->GetChildByID("a+");
-	} else if (score < 9) {
-		grading = report->GetChildByID("a");
-	} else if (score < 15) {
-		grading = report->GetChildByID("b");
-	} else if (score < 25) {
-		grading = report->GetChildByID("c");
-	} else if (score < 35) {
-		grading = report->GetChildByID("d");
-	} else if (score < 50) {
-		grading = report->GetChildByID("e");
-	} else{
-		grading = report->GetChildByID("f");
-	}
+	grading = report->GetChildByID(GetRating(score));
+	m_scoringSound->play();
 	report->SetActive(true);
 	grading->SetActive(true);
 	m_levelRated = true;
+	m_score = score;
+}
+
+std::string Level::GetRating(float score) {
+	if (score < 1) {
+		return "a++";
+	} else if (score < 4) {
+		return "a+";
+	} else if (score < 9) {
+		return "a";
+	} else if (score < 15) {
+		return "b";
+	} else if (score < 25) {
+		return "c";
+	} else if (score < 35) {
+		return "d";
+	} else if (score < 50) {
+		return "e";
+	} else {
+		return "f";
+	}
 }

@@ -1,0 +1,12 @@
+{
+  "type": "sprite",
+  "origin": "center",
+  "size": [99, 60],
+  "rotation": -13.2825,
+  "identifier": "a+",
+  "active": false,
+  "sprite": {
+    "sheet" : "assets/scripts/sheet_ui.json",
+    "index": 2
+  }
+}

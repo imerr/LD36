@@ -3,6 +3,7 @@
 #include <Engine/Game.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <Engine/Factory.hpp>
+#include <Engine/ResourceManager.hpp>
 
 Ufo::Ufo(engine::Scene* scene) : SpriteNode(scene) {
 	m_keyListener = m_scene->GetGame()->OnKeyDown.MakeHandler([this](const sf::Event::KeyEvent& e){
@@ -10,10 +11,14 @@ Ufo::Ufo(engine::Scene* scene) : SpriteNode(scene) {
 			static_cast<Level*>(m_scene)->RemovePartRope();
 		}
 	});
+	m_flyingSound = engine::ResourceManager::instance()->MakeSound("assets/sound/flying.ogg");
+	m_flyingSound->setLoop(true);
+	m_flyingSound->play();
 }
 
 Ufo::~Ufo() {
 	m_scene->GetGame()->OnKeyDown.RemoveHandler(m_keyListener);
+	delete m_flyingSound;
 }
 
 void Ufo::OnUpdate(sf::Time interval) {

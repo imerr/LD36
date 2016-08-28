@@ -1,0 +1,19 @@
+{
+  "type": "level",
+  "size": [1024, 576],
+  "pixelToMeter": 100,
+  "gravity": [0, 2],
+  "debug": false,
+  "light": {
+    "enabled": false
+  },
+  "children": [
+    {
+      "type": "sprite",
+      "size": [1024, 576],
+      "sprite": {
+        "texture": "assets/images/end.png"
+      }
+    }
+  ]
+}

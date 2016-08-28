@@ -1,9 +1,32 @@
 #include "PyramidPart.hpp"
 #include <Engine/Scene.hpp>
 #include <iostream>
+#include <Engine/ResourceManager.hpp>
+#include <Engine/util/Random.hpp>
 
 PyramidPart::PyramidPart(engine::Scene* scene) : SpriteNode(scene) {
+	m_contactListener = m_scene->OnContactPreSolve.MakeHandler([this](b2Contact* c, const b2Manifold* m){
+		if (c->GetFixtureA()->GetBody()->GetUserData() != this && c->GetFixtureB()->GetBody()->GetUserData() != this) {
+			return;
+		}
+		float mass = this->GetBody()->GetMass();
+		float impact = m->points[0].normalImpulse;
+		if (impact/mass > 0.05) {
+			float vol = impact/mass / 1.5f * 100;
 
+			if (m_impactSound->getStatus() != sf::Sound::Playing || m_impactSound->getVolume() < vol*0.8) {
+				engine::util::RandomFloat<float> r(0.7, 1.5);
+				m_impactSound->setPitch(r());
+				m_impactSound->setVolume(vol);
+				m_impactSound->play();
+			}
+		}
+	});
+	m_impactSound = engine::ResourceManager::instance()->MakeSound("assets/sound/hit.ogg");
+}
+
+PyramidPart::~PyramidPart() {
+	m_scene->OnContactPreSolve.RemoveHandler(m_contactListener);
 }
 
 void PyramidPart::OnDraw(sf::RenderTarget& target, sf::RenderStates states, float delta) {
@@ -34,3 +57,4 @@ void PyramidPart::OnUpdate(sf::Time interval) {
 		m_ropes.push_back(r);
 	}
 }
+

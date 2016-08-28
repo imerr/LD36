@@ -2,8 +2,12 @@
 #define LD36_UFO_HPP
 
 #include <Engine/SpriteNode.hpp>
+#include <SFML/Audio/Sound.hpp>
 
 class Ufo: public engine::SpriteNode {
+protected:
+	engine::util::BaseEventHandler* m_keyListener;
+	sf::Sound* m_flyingSound;
 public:
 	Ufo(engine::Scene* scene);
 	~Ufo();
@@ -13,8 +17,6 @@ protected:
 
 protected:
 	virtual void OnUpdate(sf::Time interval);
-protected:
-	engine::util::BaseEventHandler* m_keyListener;
 };
 
 
