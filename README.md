@@ -2,7 +2,7 @@
 Ludum Dare 36
 
 level format:
-```json
+```
 {
   "texture": "assets/images/pyramid2.png", // texture for everything
   "backgroundTexture": "...", // path to background texture, optional - if not specified the desert one is loaded
