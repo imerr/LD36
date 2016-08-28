@@ -10,8 +10,8 @@
   "ui": [
     {
       "type": "sprite",
-      "position": [955, 507],
-      "size": [120, 120],
+      "position": [915, 467],
+      "size": [200, 200],
       "origin": "center",
       "identifier": "goal",
       "sprite": {
@@ -75,7 +75,7 @@
       "body": {
         "type": "static",
         "shapes": [
-          {"type": "chain", "points": [[-300, -600], [-300, 500], [1300, 500], [1300, -600], [-300, -600]]}
+          {"type": "chain", "points": [[-300, -600], [-300, 530], [1300, 530], [1300, -600], [-300, -600]]}
         ]
       }
     },

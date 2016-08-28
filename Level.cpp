@@ -129,7 +129,7 @@ bool Level::SetPyramid(size_t pyramid) {
 	auto goal = m_ui->GetChildByID("goal");
 	engine::SpriteNode* goalImageShadow = new engine::SpriteNode(m_scene);
 	goal->AddNode(goalImageShadow);
-	const float goalUISize = 120;
+	const float goalUISize = 200;
 	const float goalUIMargin = 20;
 	float scale = std::min((goalUISize-goalUIMargin)/p.size.x, (goalUISize-goalUIMargin)/p.size.y);
 	goalImageShadow->SetSize(sf::Vector2f(p.size.x * scale, p.size.y * scale));
