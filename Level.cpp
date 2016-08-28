@@ -295,7 +295,7 @@ void Level::Rate() {
 }
 
 std::string Level::GetRating(float score) {
-	if (score < 1) {
+	if (score < 2) {
 		return "a++";
 	} else if (score < 4) {
 		return "a+";

@@ -3,6 +3,7 @@
 #include "EndScene.hpp"
 
 #include <Engine/Factory.hpp>
+#include <Engine/util/Random.hpp>
 
 LD36::LD36(): Game(1024, 576), m_currentLevel(0) {
 	m_windowTitle = "Pyramid Builder - LD36: Ancient Technology";

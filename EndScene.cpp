@@ -23,7 +23,15 @@ void EndScene::OnUpdate(sf::Time interval) {
 			float score = scores[m_scoreCount];
 			std::string rating = Level::GetRating(score);
 			auto r = engine::Factory::CreateChildFromFile("assets/scripts/score_"+rating+".json", this);
-			r->SetPosition((1 + m_scoreCount/2) * viewSize.x/(scores.size()/2+1), height[m_scoreCount >= scores.size() / 2]);
+			size_t count = (scores.size()/2);
+			size_t element = m_scoreCount;
+			if (m_scoreCount >= scores.size()/2) {
+				element -= count;
+				count = scores.size() - count;
+			}
+			count++;
+			std::cout << "(" << (1 + element) * viewSize.x/count << ", " << height[m_scoreCount >= scores.size()/2] << ")" << std::endl;
+			r->SetPosition((1 + element) * viewSize.x/count, height[m_scoreCount >= scores.size()/2]);
 			r->SetActive(true);
 			r->SetRotation(0);
 			m_scoreCount++;
@@ -33,7 +41,7 @@ void EndScene::OnUpdate(sf::Time interval) {
 			float score = 0.0;
 			// favor lower scores for total grade
 			for (auto s : scores) {
-				if (s < avg) score += s;
+				if (s <= avg) score += s;
 				if (s > avg) {
 					score += std::max(s*0.75f, avg);
 				}
@@ -41,7 +49,7 @@ void EndScene::OnUpdate(sf::Time interval) {
 			score /= scores.size();
 			auto r = engine::Factory::CreateChildFromFile("assets/scripts/score_"+Level::GetRating(score)+".json", this);
 			r->SetActive(true);
-			r->SetPosition(592, 495);
+			r->SetPosition(600, 495);
 			m_scoreCount++;
 		}
 	}
