@@ -7,6 +7,9 @@
   "active": false,
   "sprite": {
     "sheet" : "assets/scripts/sheet_ui.json",
-    "index": 6
+    "randomIndex": [
+      [6, 1],
+      [10, 0.1]
+    ]
   }
 }

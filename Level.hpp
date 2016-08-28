@@ -17,6 +17,7 @@ public:
 		sf::Vector2f size;
 		float scale;
 		std::vector<Part> parts;
+		std::string backgroundTexture;
 	};
 protected:
 	std::vector<Pyramid> m_pyramids;

@@ -1,6 +1,6 @@
 {
   "texture": "assets/images/pyramid2.png",
-  "size": [68, 36],
+  "size": [68, 58],
   "_c": "The scale saves us doing even more calculations by hand",
   "scale": 5,
   "parts": [

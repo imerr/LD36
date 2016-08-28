@@ -20,6 +20,7 @@ LD36::~LD36() {
 }
 
 void LD36::Restart(float score) {
+	RegisterScore(score);
 	Level* level = engine::Factory::create<Level>("assets/scripts/level.json", this);
 	if (!level->SetPyramid(m_currentLevel)) {
 		delete level;
@@ -35,6 +36,23 @@ void LD36::Restart(float score) {
 }
 
 void LD36::Next(float score) {
+	RegisterScore(score);
+	m_currentLevel++;
+	Restart();
+}
+
+std::vector<float>& LD36::GetScores() {
+	return m_scores;
+}
+
+void LD36::RestartGame() {
+	m_scores.clear();
+	m_currentLevel = 0;
+	Restart(-1);
+}
+
+void LD36::RegisterScore(float score) {
+	if (score == -1.0f) return;
 	if (m_currentLevel >= m_scores.size()) {
 		m_scores.resize(m_currentLevel + 1);
 		if (score == -1.0f) {
@@ -45,10 +63,4 @@ void LD36::Next(float score) {
 	} else if (score < m_scores[m_currentLevel]) {
 		m_scores[m_currentLevel] = score;
 	}
-	m_currentLevel++;
-	Restart();
-}
-
-std::vector<float>& LD36::GetScores() {
-	return m_scores;
 }

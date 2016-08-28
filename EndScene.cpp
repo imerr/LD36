@@ -8,8 +8,16 @@
 
 EndScene::EndScene(engine::Game* game, std::vector<float>& scores) : Scene(game), m_scoreCount(0), m_next(1) {
 	m_scoringSound = engine::ResourceManager::instance()->MakeSound("assets/sound/score.ogg");
+	m_keyHandler = game->OnKeyDown.MakeHandler([game](const sf::Event::KeyEvent&e){
+		if (e.code == sf::Keyboard::R) {
+			static_cast<LD36*>(game)->RestartGame();
+		}
+	});
 }
 
+EndScene::~EndScene() {
+	m_game->OnKeyDown.RemoveHandler(m_keyHandler);
+}
 void EndScene::OnUpdate(sf::Time interval) {
 	m_next -= interval.asSeconds();
 	if (m_next < 0) {
@@ -30,7 +38,6 @@ void EndScene::OnUpdate(sf::Time interval) {
 				count = scores.size() - count;
 			}
 			count++;
-			std::cout << "(" << (1 + element) * viewSize.x/count << ", " << height[m_scoreCount >= scores.size()/2] << ")" << std::endl;
 			r->SetPosition((1 + element) * viewSize.x/count, height[m_scoreCount >= scores.size()/2]);
 			r->SetActive(true);
 			r->SetRotation(0);
@@ -54,3 +61,4 @@ void EndScene::OnUpdate(sf::Time interval) {
 		}
 	}
 }
+

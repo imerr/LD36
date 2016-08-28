@@ -13,8 +13,11 @@ public:
 	~LD36();
 	void Restart(float score = -1.0f);
 	void Next(float score = -1.0f);
-
 	std::vector<float>& GetScores();
+
+	void RestartGame();
+protected:
+	void RegisterScore(float score);
 };
 
 

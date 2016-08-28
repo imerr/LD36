@@ -61,6 +61,7 @@ bool Level::initialize(Json::Value& root) {
 	for (auto p : pyramids) {
 		Pyramid pyramid;
 		pyramid.texture = p.get("texture", "").asString();
+		pyramid.backgroundTexture = p.get("backgroundTexture", "").asString();
 		pyramid.previewArea = engine::rectFromJson<int>(p["preview"]);
 		pyramid.size = engine::vector2FromJson<float>(p["size"]);
 		pyramid.scale = p.get("scale", 1.0f).asFloat();
@@ -143,7 +144,10 @@ bool Level::SetPyramid(size_t pyramid) {
 	goalImage->SetTexture(p.texture, p.previewArea.width && p.previewArea.height ? &p.previewArea : nullptr);
 	goalImage->setOrigin(sf::Vector2f(p.size.x * scale / 2, p.size.y * scale / 2));
 	goalImage->SetPosition(goalUISize/2, goalUISize/2);
-
+	if (!p.backgroundTexture.empty()) {
+		engine::SpriteNode* bg = static_cast<engine::SpriteNode*>(GetChildByID("bg"));
+		bg->SetTexture(p.backgroundTexture);
+	}
 	// destroy old parts
 	for (auto part : m_parts) {
 		part.second->Delete();
@@ -166,7 +170,7 @@ bool Level::SetPyramid(size_t pyramid) {
 		b2PolygonShape poly;
 		def.density = 50;
 		def.restitution = 0;
-		def.friction = 0.4;
+		def.friction = 0.8;
 		for (auto shape : part.shapes) {
 			poly.SetAsBox((shape.width * p.scale  / 2 - 1) / GetPixelMeterRatio(), (shape.height  * p.scale  / 2 - 1) / GetPixelMeterRatio(),
 						  b2Vec2(shape.left / GetPixelMeterRatio() * p.scale, shape.top / GetPixelMeterRatio() * p.scale),
@@ -280,10 +284,20 @@ void Level::Rate() {
 		b2Vec2 score = actual - goal;
 		score.x = fabsf(score.x);
 		score.y = fabsf(score.y);
+		std::cout << i << ": " << (score.x + score.y) << std::endl;
 		scores.push_back((score.x + score.y));
 	}
-	float score = std::accumulate(scores.begin(), scores.end(), 0.0f)/scores.size() * 0.8f;
-	std::cout << score << std::endl;
+	float avg = std::accumulate(scores.begin(), scores.end(), 0.0f)/scores.size();
+	float score = 0.0;
+	// favor lower scores for total grade
+	for (auto s : scores) {
+		if (s <= avg) score += s;
+		if (s > avg) {
+			score += std::max(s*0.75f, avg);
+		}
+	}
+	score /= scores.size();
+	std::cout << score  << " avg: " << avg << std::endl;
 	auto report = m_ui->GetChildByID("report");
 	engine::Node* grading = nullptr;
 	grading = report->GetChildByID(GetRating(score));
