@@ -32,6 +32,9 @@ protected:
 	float m_score;
 	sf::Sound* m_soundSummon;
 	sf::Sound* m_scoringSound;
+	float m_hintScale;
+	float m_partFlash;
+	bool m_partFlashColor;
 public:
 	Level(engine::Game* game);
 	~Level();

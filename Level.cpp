@@ -11,7 +11,8 @@
 #include <Engine/Factory.hpp>
 
 Level::Level(engine::Game* game): Scene(game), m_pyramid(0), m_currentPart(0), m_destroyParticleTime(1),
-								  m_levelDone(false), m_levelRated(false), m_settleTimer(0) {
+								  m_levelDone(false), m_levelRated(false), m_settleTimer(0), m_partFlash(0.5),
+								  m_partFlashColor(false) {
 	m_keyHandler = game->OnKeyDown.MakeHandler([this](const sf::Event::KeyEvent& e){
 		if (m_levelRated) {
 			if (e.code == sf::Keyboard::R) {
@@ -118,7 +119,23 @@ void Level::OnUpdate(sf::Time interval) {
 		}
 		m_destroyParticleTime -= interval.asSeconds();
 	}
+	m_partFlash -= interval.asSeconds();
+	if (m_partFlash < 0) {
+		m_partFlash = 0.5;
+		m_partFlashColor = !m_partFlashColor;
+		auto h = m_ui->GetChildByID("goal")->GetChildByID("part");
+		if (h) {
+			auto hint = static_cast<engine::SpriteNode*>(h);
+			if (m_partFlashColor) {
+			} else {
+				hint->SetColor(sf::Color::White);
+			}
+				hint->SetColor(sf::Color(100, 100, 100));
+		}
+	}
 }
+const float goalUISize = 200;
+const float goalUIMargin = 20;
 
 bool Level::SetPyramid(size_t pyramid) {
 	if (pyramid >= m_pyramids.size()) {
@@ -129,21 +146,27 @@ bool Level::SetPyramid(size_t pyramid) {
 	auto goal = m_ui->GetChildByID("goal");
 	engine::SpriteNode* goalImageShadow = new engine::SpriteNode(m_scene);
 	goal->AddNode(goalImageShadow);
-	const float goalUISize = 200;
-	const float goalUIMargin = 20;
-	float scale = std::min((goalUISize-goalUIMargin)/p.size.x, (goalUISize-goalUIMargin)/p.size.y);
-	goalImageShadow->SetSize(sf::Vector2f(p.size.x * scale, p.size.y * scale));
+
+	m_hintScale = std::min((goalUISize-goalUIMargin)/p.size.x, (goalUISize-goalUIMargin)/p.size.y);
+	goalImageShadow->SetSize(sf::Vector2f(p.size.x * m_hintScale, p.size.y * m_hintScale));
 	goalImageShadow->SetTexture(p.texture, p.previewArea.width && p.previewArea.height ? &p.previewArea : nullptr);
-	goalImageShadow->setOrigin(sf::Vector2f(p.size.x * scale / 2, p.size.y * scale / 2));
+	goalImageShadow->setOrigin(sf::Vector2f(p.size.x * m_hintScale / 2, p.size.y * m_hintScale / 2));
 	goalImageShadow->SetPosition(goalUISize/2 + 2, goalUISize/2 + 1);
 	goalImageShadow->SetColor(sf::Color(100, 100, 100));
 
 	engine::SpriteNode* goalImage = new engine::SpriteNode(m_scene);
 	goal->AddNode(goalImage);
-	goalImage->SetSize(sf::Vector2f(p.size.x * scale - 2, p.size.y * scale - 1));
+	goalImage->SetSize(sf::Vector2f(p.size.x * m_hintScale, p.size.y * m_hintScale));
 	goalImage->SetTexture(p.texture, p.previewArea.width && p.previewArea.height ? &p.previewArea : nullptr);
-	goalImage->setOrigin(sf::Vector2f(p.size.x * scale / 2, p.size.y * scale / 2));
-	goalImage->SetPosition(goalUISize/2, goalUISize/2);
+	goalImage->setOrigin(sf::Vector2f(p.size.x * m_hintScale / 2, p.size.y * m_hintScale / 2));
+	goalImage->SetPosition(goalUISize/2 - 2, goalUISize/2 - 1);
+	goalImage->SetIdentifier("bg");
+
+	engine::SpriteNode* partHint = new engine::SpriteNode(m_scene);
+	goal->AddNode(partHint);
+	partHint->SetIdentifier("part");
+	partHint->SetActive(false);
+
 	if (!p.backgroundTexture.empty()) {
 		engine::SpriteNode* bg = static_cast<engine::SpriteNode*>(GetChildByID("bg"));
 		bg->SetTexture(p.backgroundTexture);
@@ -218,12 +241,30 @@ void Level::MakePart(engine::Node* ufo) {
 	}
 	if (!part) {
 		m_levelDone = true;
+		m_ui->GetChildByID("goal")->GetChildByID("part")->SetActive(false);
 		return;
 	} else {
 		if (oldPart.first) {
 			DestroyParticles(ufo);
 		}
 	}
+
+	Pyramid& p = m_pyramids[m_pyramid];
+	Pyramid::Part& pp = p.parts[m_currentPart];
+	auto goal = m_ui->GetChildByID("goal");
+	auto bg = goal->GetChildByID("bg");
+	auto partHint = static_cast<engine::SpriteNode*>(goal->GetChildByID("part"));
+	partHint->SetSize(sf::Vector2f(pp.area.width * m_hintScale, pp.area.height * m_hintScale));
+	partHint->SetTexture(p.texture, &pp.area);
+	partHint->setOrigin(sf::Vector2f(0,0));
+
+	partHint->SetPosition((-p.parts[0].goal.x + (m_currentPart == 0 ? 0 : pp.goal.x))
+						  * m_hintScale + bg->GetPosition().x - bg->GetSize().x /2,
+						  (-p.parts[0].goal.y + (m_currentPart == 0 ? 0 : pp.goal.y))
+						  * m_hintScale + bg->GetPosition().y - bg->GetSize().y / 2);
+	std::cout << partHint->GetPosition().x << ", " << partHint->GetPosition().y << std::endl;
+	partHint->SetActive(true);
+
 	m_soundSummon->play();
 	part->SetActive(true);
 	part->GetBody()->SetLinearVelocity(b2Vec2(0,0));
@@ -276,10 +317,12 @@ void Level::Rate() {
 	for (size_t i = 0; i < pyramid.parts.size(); i++) {
 		auto p = pyramid.parts[i];
 		auto part = m_parts[i].second;
+		auto goal = b2Vec2(p.goal.x * pyramid.scale, p.goal.y * pyramid.scale);
 		if (i == 0) {
 			center = pos(part);
+			goal.x = 0;
+			goal.y = 0;
 		}
-		auto goal = b2Vec2(p.goal.x * pyramid.scale, p.goal.y * pyramid.scale);
 		auto actual = pos(part) - center;
 		b2Vec2 score = actual - goal;
 		score.x = fabsf(score.x);
